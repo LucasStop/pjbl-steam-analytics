@@ -1,0 +1,11 @@
+# Ambiente Python — recriar com: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/
+
+# Datasets — grandes demais pro GitHub (o maior tem 2,16 GB, limite é 100 MB/arquivo).
+# Fontes e como baixar de novo: ver README.md.
+Dataset/
+
+.DS_Store
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
