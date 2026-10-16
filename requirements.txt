@@ -1,6 +1,6 @@
 altair==6.2.2
 anyio==4.15.0
-appnope==1.0.0
+appnope==1.0.0; sys_platform == "darwin"
 argon2-cffi==25.1.0
 argon2-cffi-bindings==26.1.0
 arrow==1.4.0
@@ -120,3 +120,4 @@ webencodings==0.6.1
 websocket-client==1.9.2
 websockets==16.1.1
 widgetsnbextension==4.0.16
+kaggle
