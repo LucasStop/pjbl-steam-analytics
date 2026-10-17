@@ -30,7 +30,7 @@ Dados necessários: catálogo com preço, gênero/tags, reviews e pico de jogado
 | [andrewmvd/steam-reviews](https://www.kaggle.com/datasets/andrewmvd/steam-reviews/versions/3) (Kaggle) | CSV (2,16 GB) | 6.417.106 | texto e voto de review por `app_id` | **Fora do RA1** (RA2+) |
 | [Steam Web API](https://partner.steamgames.com/doc/webapi_overview) + [SteamSpy API](https://steamspy.com/api.php) | JSON (API) | por `appid` consultado | jogadores atuais, preço atual | Pergunta 4 (dado ao vivo); RA2+ |
 
-**Ingestão (RA1):** os CSVs não vão pro GitHub (limite de 100 MB/arquivo). Para reproduzir: `pip install -r requirements.txt`, configurar `~/.kaggle/kaggle.json` e rodar `kaggle datasets download -d fronkongames/steam-games-dataset -p Dataset/fronkongames --unzip`. O notebook `01_inspect_prepare.ipynb` valida a presença de `Dataset/fronkongames/games.csv` e gera `games_clean.csv`.
+**Ingestão (RA1):** os CSVs não vão pro GitHub (limite de 100 MB/arquivo). Cópia dos dados no [Google Drive do grupo](https://drive.google.com/drive/folders/1uelu5auKv6Y-qCLQOzXuqzMDGkjlKy3m?usp=sharing): baixe a pasta `Dataset/` e coloque na raiz do projeto (os notebooks só precisam de `Dataset/fronkongames/games.csv`). Alternativa direto do Kaggle: `pip install -r requirements.txt`, configurar `~/.kaggle/kaggle.json` e rodar `kaggle datasets download -d fronkongames/steam-games-dataset -p Dataset/fronkongames --unzip`. O notebook `01_inspect_prepare.ipynb` valida a presença de `Dataset/fronkongames/games.csv` e gera `games_clean.csv`.
 
 ## Ferramentas — decisão e por quê
 
