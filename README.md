@@ -55,8 +55,8 @@ Ambiente: venv dedicado do projeto em `.venv/`, dependências travadas em `requi
 ```
 PJBL/
 ├── Dataset/          # CSVs originais + games_clean.csv (fora do git)
-├── Notebooks/        # 01_inspect_prepare (RA1)
-├── docs/             # RA1_Data_Analytics.docx (documentação da entrega) + template
+├── Notebooks/        # 01_inspect_prepare (RA1) + projeto_data_analytics (RA1 + RA2, template da disciplina)
+├── docs/             # RA1_Data_Analytics.docx, projeto_data_analytics_RA1_RA2.pdf (entrega RA2), roteiro_demo_RA2.md, template
 ├── .venv/            # ambiente Python do projeto
 └── requirements.txt  # dependências travadas
 ```
@@ -65,11 +65,19 @@ PJBL/
 
 ```bash
 .venv/bin/jupyter nbconvert --to notebook --execute --inplace Notebooks/01_inspect_prepare.ipynb
+.venv/bin/jupyter nbconvert --to notebook --execute --inplace Notebooks/projeto_data_analytics.ipynb
 ```
 
-## Status atual (RA1)
-`01_inspect_prepare.ipynb` executado do zero (7 problemas de qualidade, decisões justificadas, validação, `games_clean.csv`). Documentação da entrega em `docs/RA1_Data_Analytics.docx`. Pendente: validação das perguntas com a professora.
+O segundo notebook usa PySpark 4.0.3 e precisa de Java 17.
 
-Trabalho adiantado de RA2+ fica fora do `master`, na branch `feat/ra2-analysis`.
+## Status atual
+
+**RA1 (Inspect/Prepare):** `01_inspect_prepare.ipynb` executado do zero (7 problemas de qualidade, decisões justificadas, validação, `games_clean.csv`). Documentação da entrega em `docs/RA1_Data_Analytics.docx`.
+
+**RA2 (Data Stream):** seções 8 a 12 de `Notebooks/projeto_data_analytics.ipynb`. Spark Structured Streaming, cenário A (dados estáticos + chegada simulada de registros artificiais): 45 leituras de jogadores simultâneos dos 3 jogos de maior `Peak CCU` (Counter-Strike 2, Dota 2, PUBG), chegando em 3 lotes por uma pasta monitorada. Janela **tumbling de 5 minutos**, agregação = **média de jogadores simultâneos** por janela e por jogo. Um `assert` confirma que o resultado do streaming é igual ao cálculo em batch (pandas). Entrega em PDF: `docs/projeto_data_analytics_RA1_RA2.pdf`; roteiro da demonstração: `docs/roteiro_demo_RA2.md`.
+
+Pendente: validação das perguntas com a professora.
+
+Trabalho adiantado de RA3+ (análise, API, dashboard) fica fora do `master`, na branch `feat/ra2-analysis`.
 
 **Ressalva**: alinhamento verificado contra o conteúdo dos slides de Aula 1 e Aula 2 no Canvas — não há visibilidade sobre orientações dadas verbalmente em sala que não estejam nos slides ou no plano de ensino.
