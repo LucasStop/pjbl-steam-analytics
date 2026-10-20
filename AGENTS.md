@@ -16,7 +16,8 @@ Trabalho de Data Analytics (PUCPR, prof. Marina de Lara, Turma U). Dupla: Lucas 
 
 ## Regras
 - Autoria dos commits do RA2: `--author="Lucas Bruno e Silva <cucabruno06@gmail.com>"`. PR aberto por ele; o outro integrante aprova.
-- Branch `feat/...` ou `fix/...`, PR para `master` com `gh pr create`. Commit e push só quando pedido. Mensagem de commit explica o porquê.
+- Branch `feat/...` ou `fix/...`, PR para `master` com `gh pr create`. Commit e push só quando pedido.
+- Commits e título de PR em Conventional Commits: `tipo(escopo): resumo`, linha em branco e corpo explicando o porquê (o check `conventions` do PR reprova fora desse padrão). PR com `Closes #N` ou o label `sem-issue`, CI verde e aprovação do code owner antes do merge.
 - Nunca commitar credenciais (`~/.kaggle/kaggle.json`, `.env`). Os CSVs ficam em `Dataset/`, fora do git.
 - `feat/ra2-analysis` guarda trabalho de RA3+ (API, dashboard); fora do caminho das entregas.
 
