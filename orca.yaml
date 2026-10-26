@@ -1,0 +1,6 @@
+scripts:
+  setup: |
+    # Dataset/ não vai pro git (limite do GitHub): linka do checkout principal
+    if [ -d "$ORCA_ROOT_PATH/Dataset" ] && [ ! -e Dataset ]; then ln -s "$ORCA_ROOT_PATH/Dataset" Dataset; fi
+    python3 -m venv .venv
+    ./.venv/bin/pip install -r requirements.txt
