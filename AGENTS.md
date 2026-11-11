@@ -4,7 +4,7 @@ Trabalho de Data Analytics (PUCPR, prof. Marina de Lara, Turma U). Dupla: Lucas 
 
 ## Entregas
 - **RA1** (vence 21/10/2026 18:00): avaliado pela URL do repo em `master`. Notebook `Notebooks/01_inspect_prepare.ipynb` + `docs/RA1_Data_Analytics.docx`. Não alterar a lógica nem os números.
-- **RA2 — Data Stream** (vence 21/10/2026 20:00): seções 8 a 12 de `Notebooks/projeto_data_analytics.ipynb`; entrega no Canvas é o PDF `docs/projeto_data_analytics_RA1_RA2.pdf`. Roteiro da apresentação (5 min): `docs/roteiro_demo_RA2.md`.
+- **RA2 — Data Stream** (vence 21/10/2026 20:00): seções 8 a 12 de `Notebooks/projeto_data_analytics.ipynb`; entrega no Canvas é o PDF `docs/projeto_data_analytics_RA1_RA2_RA3.pdf`. Roteiro da apresentação (5 min): `docs/roteiro_demo_RA2.md`.
 - **RA3** (vence 18/11/2026 20:00): avaliado pela URL do repo em `master`. Seções 13 a 17 de `Notebooks/projeto_data_analytics.ipynb`. Roteiro da apresentação: `docs/roteiro_demo_RA3.md`.
 
 ## Decisões do RA2 (não mudar sem combinar)
@@ -44,9 +44,9 @@ python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ## Regerar o notebook e o PDF
 O notebook é gerado: `tools/build_notebook.py` junta o template da disciplina (`tools/template_projeto_data_analytics.ipynb`) com o texto e o código do grupo. Para mudar texto ou código, editar o `build_notebook.py`, nunca só o `.ipynb`.
 ```bash
-bash tools/gerar_pdf.sh   # gera, executa (~20 s, precisa de Dataset/ e Java 17) e exporta docs/projeto_data_analytics_RA1_RA2.pdf
+bash tools/gerar_pdf.sh   # gera, executa (~20 s, precisa de Dataset/ e Java 17) e exporta docs/projeto_data_analytics_RA1_RA2_RA3.pdf
 ```
-`nbconvert --to pdf` falha (falta `tcolorbox.sty` no TeX), por isso o script usa HTML + Chrome headless (`CHROME=...` para outro caminho). Conferir: 15 páginas, seções 1 a 12 em ordem, nenhuma linha de código cortada.
+`nbconvert --to pdf` falha (falta `tcolorbox.sty` no TeX), por isso o script usa HTML + Chrome headless (`CHROME=...` para outro caminho). Conferir: seções 1 a 17 em ordem, nenhuma linha de código cortada.
 
 ## docx
 É XML: `unzip` -> editar `word/document.xml` -> `zip -Xr`. Não reformatar o XML.

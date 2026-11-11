@@ -29,5 +29,5 @@ s = open(p, encoding='utf-8').read()
 css = "<style>@page{margin:14mm}.jp-Notebook{padding:0!important}pre,code,.highlight pre,.jp-RenderedText pre{white-space:pre-wrap!important;word-break:break-word!important;overflow-wrap:anywhere!important}.jp-Cell-inputWrapper,.jp-InputArea-editor{overflow:visible!important}</style></head>"
 open(p, 'w', encoding='utf-8').write(s.replace('</head>', css, 1))
 PYEOF
-"$CHROME" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf=docs/projeto_data_analytics_RA1_RA2.pdf "file://$TMP/projeto.html" 2>&1 | grep written
-pdfinfo docs/projeto_data_analytics_RA1_RA2.pdf | grep Pages
+"$CHROME" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf=docs/projeto_data_analytics_RA1_RA2_RA3.pdf "file://$TMP/projeto.html" 2>&1 | grep written
+pdfinfo docs/projeto_data_analytics_RA1_RA2_RA3.pdf | grep Pages
