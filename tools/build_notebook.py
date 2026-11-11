@@ -417,6 +417,28 @@ plt.tight_layout()
 plt.show()"""))
 cells.append(ans("""`Peak CCU` correlaciona mais com `owners_avg` (0,54), depois com `Metacritic score` (0,39) e, bem menos, com `Price` (0,20). O preço quase não se relaciona com a base de donos (-0,08): jogos caros não vendem mais nem menos por isso, mas têm pico um pouco maior. Metacritic se correlaciona fracamente com preço (0,25) e com donos (0,26). Como a nota Metacritic só existe para 15,3% do universo, essa correlação vale para os jogos com crítica especializada (3.004), tipicamente os maiores (viés discutido na seção 15). **Leitura:** nenhuma variável isolada explica o pico; o conjunto delas é o ponto de partida do modelo de ML."""))
 
+cells.append(md("""## 15. Amostragem e representatividade
+
+Avalie se os dados representam o problema investigado: origem e abrangência, adequação dos registros e possíveis vieses."""))
+cells.append(code("""# O universo do RA3 (Peak CCU > 0) é um subconjunto do catálogo: compara com o catálogo inteiro
+df_limpo["tem_telemetria"] = df_limpo["Peak CCU"] > 0
+comparacao_universo = df_limpo.groupby("tem_telemetria")["Price"].agg(["count", "mean", "median"]).round(2)
+comparacao_universo.index = ["sem telemetria (Peak CCU = 0)", "com telemetria (Peak CCU > 0)"]
+display(comparacao_universo)
+
+# Proporção com telemetria por ano de lançamento
+ano = df_limpo["Release date"].dt.year
+por_ano = df_limpo[ano.between(2015, 2026)].groupby(ano[ano.between(2015, 2026)])["tem_telemetria"].mean()
+fig, eixo = plt.subplots(figsize=(8, 3.5))
+eixo.bar(por_ano.index.astype(int), por_ano.values * 100)
+eixo.set(title="Jogos com telemetria de Peak CCU por ano de lançamento", xlabel="Ano de lançamento", ylabel="% dos jogos do ano")
+plt.tight_layout()
+plt.show()
+print(f"Catálogo: {len(df_limpo):,} jogos; universo do RA3: {df_limpo['tem_telemetria'].sum():,} ({df_limpo['tem_telemetria'].mean():.1%}).")"""))
+cells.append(ans("""- **Origem e abrangência:** os dados vêm do dataset [fronkongames/steam-games-dataset](https://www.kaggle.com/datasets/fronkongames/steam-games-dataset) (Kaggle, coleta da loja Steam), com 125.855 jogos. É quase um censo do catálogo da Steam até o momento da coleta, não uma amostra sorteada; por isso não foi aplicado nenhum procedimento de amostragem. O universo analisado no RA3 é o subconjunto com telemetria (`Peak CCU` > 0): 19.680 jogos (15,6%).
+- **Os registros representam o problema?** Para a pergunta "o que acompanha maior pico de jogadores", sim, mas só para jogos com audiência medida. Esse subconjunto não é aleatório: tem preço mediano de US$ 4,79 contra US$ 1,99 dos jogos sem telemetria, ou seja, tende a ser de jogos mais caros e mais estabelecidos. Metacritic existe em só 15,3% do universo.
+- **Vieses e limitações:** (1) **viés de sobrevivência/telemetria**: jogos que nunca atingiram audiência mínima ficam fora, então as conclusões valem para jogos que "apareceram"; (2) **viés temporal**: a proporção com telemetria cai de 33% (2015) para 9% (2025) e 0% (2026), porque jogos recentes ainda não acumularam histórico e porque a base reflete o momento da coleta; (3) `Peak CCU` é um pico histórico único, não uma série no tempo, e `owners_avg` é ponto médio de faixa; (4) o streaming do RA2 usa leituras simuladas, não dados reais. Nada disso invalida a análise, mas os resultados **não devem ser generalizados** para todo o catálogo nem usados como causalidade."""))
+
 nb = new_notebook(cells=cells, metadata={
     "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
     "language_info": {"name": "python"},
