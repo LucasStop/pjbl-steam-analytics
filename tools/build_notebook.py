@@ -318,6 +318,105 @@ cells.append(ans("""- **O que foi possível observar:** o Spark Structured Strea
 - **Contribuição das janelas temporais:** agrupar por intervalos de 5 minutos transforma leituras soltas em um indicador comparável no tempo (média por janela), e deixa claro quando uma janela está completa ou ainda parcial. A tumbling foi suficiente porque cada leitura pertence a um único bloco; uma sliding suavizaria a curva, ao custo de repetir leituras entre janelas.
 - **Faria sentido numa aplicação real?** Sim, em parte. Monitorar jogadores simultâneos de poucos jogos quase em tempo real (alertas de queda ou pico, acompanhamento de lançamento) combina com streaming, alimentado por um coletor da Steam Web API ou do SteamSpy no lugar da simulação. Para a análise histórica do catálogo (P1 a P3), o batch continua mais adequado. Neste trabalho o streaming foi um **exercício didático**: os dados são simulados a partir do `Peak CCU` real, não leituras reais."""))
 
+# ---------------- RA3
+cells.append(md("""---
+
+# RA3 — Analysis, Visualization and Machine Learning
+
+Nesta etapa o projeto é concluído: estatística descritiva, visualizações, análise de representatividade e uma aplicação simples de aprendizagem supervisionada, sempre sobre a base preparada no RA1 (`df_limpo`). O universo analisado é o dos jogos com telemetria de audiência (`Peak CCU` > 0), porque nos demais o pico é ausência de dado, não zero real (ver RA1)."""))
+
+cells.append(md("""## 13. Análise estatística descritiva
+
+Calcule e interprete medidas de **tendência central** (média e mediana), **dispersão** (amplitude, desvio-padrão, quartis) e **distribuição** (assimetria, percentis, concentração) das variáveis numéricas principais do projeto."""))
+cells.append(code("""import matplotlib.pyplot as plt
+import numpy as np
+
+# Universo do RA3: jogos com telemetria de Peak CCU (> 0), como definido no RA1
+com_ccu = df_limpo[df_limpo["Peak CCU"] > 0].copy()
+variaveis = ["Price", "Peak CCU", "Metacritic score", "owners_avg"]
+for coluna in variaveis:  # dtypes anuláveis do pandas 3 (pd.NA) não suportam skew(): converte para float com NaN
+    com_ccu[coluna] = com_ccu[coluna].to_numpy(dtype="float64", na_value=np.nan)
+
+desc = com_ccu[variaveis].agg(["count", "mean", "median", "std", "min", "max"]).T
+desc["amplitude"] = desc["max"] - desc["min"]
+desc["q1"] = com_ccu[variaveis].quantile(0.25)
+desc["q3"] = com_ccu[variaveis].quantile(0.75)
+desc["p95"] = com_ccu[variaveis].quantile(0.95)
+desc["assimetria"] = com_ccu[variaveis].skew()
+display(desc.round(2))
+
+# Média vs mediana e concentração: quanto a cauda longa distorce a "média típica"
+razao = (desc["mean"] / desc["median"]).rename("média / mediana")
+display(razao.round(1).to_frame())
+top1 = com_ccu["Peak CCU"].nlargest(int(len(com_ccu) * 0.01)).sum() / com_ccu["Peak CCU"].sum()
+print(f"{len(com_ccu):,} jogos com Peak CCU > 0; o 1% mais jogado concentra {top1:.1%} da soma de Peak CCU.")
+print(f"Jogos gratuitos no universo: {(com_ccu['Price'] == 0).mean():.1%}. Metacritic disponível em {com_ccu['Metacritic score'].notna().mean():.1%}.")"""))
+cells.append(ans("""- **Tendência central:** a média está muito acima da mediana nas variáveis de audiência. `Peak CCU`: média 340 contra mediana 3 (razão 113 vezes); `owners_avg`: média 444.798 contra mediana 35.000 (12,7 vezes). Nelas a média descreve mal o jogo típico; a **mediana** é a medida representativa. Em `Price` (média US$ 6,86; mediana US$ 4,79) e `Metacritic score` (média 75,9; mediana 77) as duas medidas ficam próximas.
+- **Dispersão:** o desvio-padrão de `Peak CCU` (9.304) é 27 vezes a média, e a amplitude vai de 1 a 1.013.936 jogadores. Entre Q1 e Q3 o intervalo é só de 1 a 15, e o percentil 95 é 328: o miolo da base é estreito e a variabilidade vem de poucos jogos extremos. Metacritic é o oposto, com dispersão pequena (desvio 9,2; Q1 a Q3 de 71 a 82).
+- **Distribuição:** `Peak CCU` (assimetria 84), `owners_avg` (29) e `Price` (6,7) são fortemente assimétricas à direita; Metacritic é levemente assimétrica à esquerda (-1,15), concentrada em notas altas. O 1% mais jogado concentra **82,1%** de todo o `Peak CCU` somado: a audiência da Steam é um mercado de poucos vencedores e uma cauda longa.
+- **Consequência para o resto do RA3:** as análises e o modelo usam escala log em `Peak CCU` e `owners_avg`, e a correlação de Spearman (por postos) no lugar da de Pearson."""))
+
+cells.append(md("""## 14. Visualização e interpretação dos dados
+
+Quatro visualizações, cada uma com variáveis identificadas nos eixos e uma interpretação logo abaixo."""))
+cells.append(md("### 14.1 Distribuição de `Peak CCU` (histograma)"))
+cells.append(code("""fig, eixos = plt.subplots(1, 2, figsize=(12, 4))
+eixos[0].hist(com_ccu["Peak CCU"].clip(upper=com_ccu["Peak CCU"].quantile(0.95)), bins=40, edgecolor="white")
+eixos[0].set(title="Peak CCU até o percentil 95 (escala linear)", xlabel="Peak CCU (jogadores simultâneos)", ylabel="Número de jogos")
+eixos[1].hist(np.log10(com_ccu["Peak CCU"]), bins=40, edgecolor="white")
+eixos[1].set(title="Peak CCU em escala log10 (todos os jogos)", xlabel="log10(Peak CCU)", ylabel="Número de jogos")
+for linha, rotulo in [(com_ccu["Peak CCU"].median(), "mediana"), (com_ccu["Peak CCU"].mean(), "média")]:
+    eixos[1].axvline(np.log10(linha), color="red" if rotulo == "média" else "black", linestyle="--", label=f"{rotulo} = {linha:,.0f}")
+eixos[1].legend()
+plt.tight_layout()
+plt.show()"""))
+cells.append(ans("""Na escala linear (painel esquerdo, já cortada no percentil 95) quase todos os jogos se acumulam na primeira barra: a maioria tem poucos jogadores simultâneos. Na escala log10 (painel direito) a forma fica legível: a massa está entre 1 e 100 jogadores (log10 de 0 a 2), e a cauda se estende até 6 (um milhão). A linha tracejada da média (340) fica bem à direita da mediana (3), o que mostra graficamente a assimetria calculada na seção 13. **Leitura:** o jogo típico da Steam tem audiência mínima; "sucesso" em jogadores simultâneos é um evento raro e extremo."""))
+
+cells.append(md("### 14.2 `Peak CCU` por gênero (boxplot)"))
+cells.append(code("""por_genero = com_ccu.assign(Genre=com_ccu["Genres"].str.split(",")).explode("Genre")
+por_genero["Genre"] = por_genero["Genre"].str.strip()
+por_genero = por_genero[por_genero["Genre"] != "Not specified"]
+top_generos = por_genero["Genre"].value_counts().head(8).index
+ordem = por_genero[por_genero["Genre"].isin(top_generos)].groupby("Genre")["Peak CCU"].median().sort_values().index
+
+fig, eixo = plt.subplots(figsize=(10, 5))
+eixo.boxplot([np.log10(por_genero.loc[por_genero["Genre"] == g, "Peak CCU"]) for g in ordem],
+             tick_labels=ordem, orientation="horizontal", showfliers=False)
+eixo.set(title="Peak CCU por gênero (8 gêneros mais frequentes, sem outliers no desenho)",
+         xlabel="log10(Peak CCU)", ylabel="Gênero")
+plt.tight_layout()
+plt.show()
+display(por_genero[por_genero["Genre"].isin(top_generos)].groupby("Genre")["Peak CCU"].agg(["count", "median", "mean"]).sort_values("median", ascending=False).round(1))"""))
+cells.append(ans("""Os oito gêneros mais frequentes se sobrepõem muito: as medianas ficam entre 2 e 4 jogadores, e as caixas (Q1 a Q3) cobrem faixas parecidas. **Indie** e **Casual** têm a menor mediana (2), enquanto **Action**, **RPG**, **Strategy**, **Simulation** e **Free To Play** chegam a 4. A diferença entre gêneros aparece mais na **média** do que na mediana: Free To Play (1.963) e Action (649) são puxados por poucos títulos gigantes (Counter-Strike, Dota 2, PUBG), ao passo que Indie (148) e Casual (115) quase não têm esse efeito. **Leitura:** o gênero sozinho separa pouco o jogo típico; o que ele muda é a chance de existir um campeão de audiência (principalmente multiplayer e gratuito). Como um jogo tem vários gêneros, a soma das contagens passa do total de jogos."""))
+
+cells.append(md("### 14.3 Popularidade da base x pico de jogadores (dispersão)"))
+cells.append(code("""from scipy.stats import spearmanr
+
+fig, eixo = plt.subplots(figsize=(7, 5))
+grade = eixo.hexbin(np.log10(com_ccu["owners_avg"]), np.log10(com_ccu["Peak CCU"]), gridsize=40, bins="log", cmap="viridis", mincnt=1)
+fig.colorbar(grade, label="Número de jogos (escala log)")
+eixo.set(title="owners_avg x Peak CCU (ambos em log10)", xlabel="log10(owners_avg)", ylabel="log10(Peak CCU)")
+plt.tight_layout()
+plt.show()
+rho, p = spearmanr(com_ccu["owners_avg"], com_ccu["Peak CCU"])
+print(f"Spearman owners_avg x Peak CCU: {rho:.2f} (p = {p:.1e})")"""))
+cells.append(ans("""Há uma relação positiva clara: quanto maior a base de donos estimada, maior o pico de jogadores simultâneos (Spearman 0,54, p ≈ 0). A nuvem é larga: entre os jogos com 1,5 milhão de donos estimados, por exemplo, o `Peak CCU` vai de 4 (percentil 5) a 2.549 (percentil 95), quase três ordens de grandeza, então posse é condição necessária, mas longe de suficiente. A concentração mais densa (cor mais clara) fica na faixa de 10 mil donos com 1 a 2 jogadores simultâneos (7.779 jogos, 40% do universo). **Leitura:** popularidade acumulada e audiência simultânea andam juntas, mas não são a mesma coisa; isso reaparece no modelo da seção 16 (risco de usar `owners_avg` como feature)."""))
+
+cells.append(md("### 14.4 Correlação entre as variáveis (mapa de calor)"))
+cells.append(code("""corr = com_ccu[variaveis].corr(method="spearman")
+fig, eixo = plt.subplots(figsize=(5.5, 4.5))
+imagem = eixo.imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
+eixo.set_xticks(range(len(variaveis)), variaveis, rotation=30, ha="right")
+eixo.set_yticks(range(len(variaveis)), variaveis)
+for i in range(len(variaveis)):
+    for j in range(len(variaveis)):
+        eixo.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center")
+fig.colorbar(imagem, label="Correlação de Spearman")
+eixo.set_title("Correlação de Spearman entre variáveis numéricas")
+plt.tight_layout()
+plt.show()"""))
+cells.append(ans("""`Peak CCU` correlaciona mais com `owners_avg` (0,54), depois com `Metacritic score` (0,39) e, bem menos, com `Price` (0,20). O preço quase não se relaciona com a base de donos (-0,08): jogos caros não vendem mais nem menos por isso, mas têm pico um pouco maior. Metacritic se correlaciona fracamente com preço (0,25) e com donos (0,26). Como a nota Metacritic só existe para 15,3% do universo, essa correlação vale para os jogos com crítica especializada (3.004), tipicamente os maiores (viés discutido na seção 15). **Leitura:** nenhuma variável isolada explica o pico; o conjunto delas é o ponto de partida do modelo de ML."""))
+
 nb = new_notebook(cells=cells, metadata={
     "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
     "language_info": {"name": "python"},
