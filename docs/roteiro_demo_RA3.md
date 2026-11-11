@@ -12,7 +12,7 @@ Notebook: `Notebooks/projeto_data_analytics.ipynb`. Antes de começar: abrir o n
    - Viés de telemetria/sobrevivência: os 19.680 jogos com `Peak CCU` > 0 não são amostra aleatória; são jogos mais caros (mediana US$ 4,79 contra US$ 1,99 dos jogos sem telemetria) e mais estabelecidos.
    - Viés temporal: proporção com telemetria cai de 33% (2015) para 9% (2025) e 0% (2026), pois títulos recentes ainda não acumularam histórico e a base reflete o momento da coleta.
 4. **Machine Learning (1:30)** —
-   - Setup (seção 16.1): regressão supervisionada para estimar `log10(Peak CCU)`. Split 80/20 com seed 42 (15.744 treino / 3.936 teste). Metacritic imputado pela mediana do treino (77,0).
+   - Setup (seção 16.1): regressão supervisionada para estimar `log10(Peak CCU)`. Split 80/20 com seed 42 (15.744 treino / 3.936 teste). Metacritic imputado pela mediana do treino.
    - Comparação dos 3 cenários (16.2):
      - Baseline (prever a média): MAE 0,679, RMSE 0,869, R² 0,000 (fator de erro de 4,8x).
      - Cenário A (todas as 15 features): Random Forest atinge R² 0,713 e MAE 0,346 (erro de 2,2x no `Peak CCU`), superando a Regressão Linear (R² 0,562).
