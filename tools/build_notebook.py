@@ -137,13 +137,16 @@ df_limpo["Release date"] = pd.to_datetime(df_limpo["Release date"], errors="coer
 
 print(f"owners_* ausentes: {int(df_limpo[['owners_min','owners_max','owners_avg']].isna().sum().sum())}")
 print(f"Release date: {df_limpo['Release date'].dtype} | datas não convertidas: {df_limpo['Release date'].isna().sum()}")
+"""))
+cells.append(ans("""`Estimated owners` virou três colunas numéricas (`owners_min`, `owners_max`, `owners_avg`, esta última o ponto médio da faixa) e `Release date` virou `datetime`, o que permite análises numéricas e temporais nas próximas etapas. A coluna original de owners foi mantida. Nenhuma agregação analítica foi feita neste RA."""))
+cells.append(md("""## 6. Validação do conjunto preparado
 
-# Validação do conjunto preparado
-assert df_limpo.shape == (125855, 42), df_limpo.shape
+Confirme que o conjunto final tem o formato esperado antes de seguir para as próximas etapas."""))
+cells.append(code("""assert df_limpo.shape == (125855, 42), df_limpo.shape
 assert df_limpo["AppID"].is_unique and df_limpo["AppID"].notna().all()
 assert "Movies" not in df_limpo.columns
 print(f"Conjunto preparado: {df_limpo.shape[0]} linhas x {df_limpo.shape[1]} colunas | AppID único")"""))
-cells.append(ans("""`Estimated owners` virou três colunas numéricas (`owners_min`, `owners_max`, `owners_avg`, esta última o ponto médio da faixa) e `Release date` virou `datetime`, o que permite análises numéricas e temporais nas próximas etapas. A coluna original de owners foi mantida. Nenhuma agregação analítica foi feita neste RA."""))
+cells.append(ans("""O conjunto preparado tem 125.855 linhas e 42 colunas, `AppID` único e sem a coluna `Movies`, como esperado."""))
 cells.append(md(T[16]))
 cells.append(ans("""- **O que foi descoberto:** o dataset tinha um defeito estrutural (cabeçalho) que invalidaria qualquer análise; corrigido, a base fica íntegra (125.855 × 42, `AppID` único). 84,4% dos jogos não têm telemetria de `Peak CCU`.
 - **Limitações:** as perguntas P1 a P3 valem só para o subconjunto com `Peak CCU` > 0 (cerca de 16%); Metacritic existe em 3,4% dos jogos; `owners_avg` é ponto médio de faixa.
