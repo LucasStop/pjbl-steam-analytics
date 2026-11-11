@@ -439,6 +439,104 @@ cells.append(ans("""- **Origem e abrangência:** os dados vêm do dataset [fronk
 - **Os registros representam o problema?** Para a pergunta "o que acompanha maior pico de jogadores", sim, mas só para jogos com audiência medida. Esse subconjunto não é aleatório: tem preço mediano de US$ 4,79 contra US$ 1,99 dos jogos sem telemetria, ou seja, tende a ser de jogos mais caros e mais estabelecidos. Metacritic existe em só 15,3% do universo.
 - **Vieses e limitações:** (1) **viés de sobrevivência/telemetria**: jogos que nunca atingiram audiência mínima ficam fora, então as conclusões valem para jogos que "apareceram"; (2) **viés temporal**: a proporção com telemetria cai de 33% (2015) para 9% (2025) e 0% (2026), porque jogos recentes ainda não acumularam histórico e porque a base reflete o momento da coleta; (3) `Peak CCU` é um pico histórico único, não uma série no tempo, e `owners_avg` é ponto médio de faixa; (4) o streaming do RA2 usa leituras simuladas, não dados reais. Nada disso invalida a análise, mas os resultados **não devem ser generalizados** para todo o catálogo nem usados como causalidade."""))
 
+cells.append(md("""## 16. Aplicação de Machine Learning
+
+Implemente uma aplicação simples de **aprendizagem supervisionada**: defina o problema preditivo, o alvo (*target*) e as características (*features*), separe treino e teste, treine modelos, faça previsões e avalie com métricas adequadas."""))
+cells.append(md("""### 16.1 Problema preditivo
+
+**Regressão:** estimar o pico de jogadores simultâneos de um jogo (`Peak CCU`) a partir de características da loja. **Alvo:** `log10(Peak CCU)` (a escala log é necessária porque a variável é extremamente assimétrica, seção 13; os erros ficam em ordens de grandeza). **Universo:** os 19.680 jogos com telemetria. **Features:** preço, nota Metacritic (mediana do treino quando ausente, mais um indicador de presença), proporção de reviews positivas, log do número de reviews, ano de lançamento, oito gêneros principais (indicadores 0/1) e, no cenário completo, log de `owners_avg`.
+
+A pergunta central é **quanto cada grupo de variáveis ajuda**. Como `owners_avg` e o número de reviews medem popularidade acumulada, quase "contêm" a resposta, então comparamos três cenários: (A) todas as features, (B) sem `owners_avg`, (C) só características intrínsecas do jogo (preço, nota, ano, gênero), sem nenhuma medida de popularidade."""))
+cells.append(code("""import pandas as pd
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+
+alvo = np.log10(com_ccu["Peak CCU"].astype("float64"))
+generos_principais = list(com_ccu["Genres"].str.split(",").explode().str.strip().drop(labels=[], errors="ignore")
+                          .value_counts().drop("Not specified", errors="ignore").head(8).index)
+
+# Separação treino/teste ANTES de qualquer imputação: a mediana de Metacritic vem só do treino
+indices_treino, indices_teste = train_test_split(com_ccu.index, test_size=0.2, random_state=42)
+mediana_meta = com_ccu.loc[indices_treino, "Metacritic score"].median()
+ano_lancamento = com_ccu["Release date"].dt.year.astype("float64")
+
+X = pd.DataFrame(index=com_ccu.index)
+X["Price"] = com_ccu["Price"].astype("float64")
+X["metacritic"] = com_ccu["Metacritic score"].fillna(mediana_meta)
+X["tem_metacritic"] = com_ccu["Metacritic score"].notna().astype(int)
+avaliacoes = com_ccu["Positive"].astype("float64") + com_ccu["Negative"].astype("float64")
+X["prop_positivas"] = (com_ccu["Positive"].astype("float64") / avaliacoes).fillna(0.5)
+X["log_avaliacoes"] = np.log10(avaliacoes + 1)
+X["ano"] = ano_lancamento.fillna(ano_lancamento.loc[indices_treino].median())
+for g in generos_principais:
+    X["genero_" + g] = com_ccu["Genres"].str.contains(g, regex=False).astype(int)
+X["log_owners"] = np.log10(com_ccu["owners_avg"].astype("float64"))
+
+cenarios = {
+    "A) todas as features": list(X.columns),
+    "B) sem owners_avg": [c for c in X.columns if c != "log_owners"],
+    "C) só intrínsecas": [c for c in X.columns if c not in ("log_owners", "log_avaliacoes", "prop_positivas")],
+}
+modelos = {
+    "baseline (média)": lambda: DummyRegressor(strategy="mean"),
+    "regressão linear": lambda: LinearRegression(),
+    "random forest": lambda: RandomForestRegressor(n_estimators=200, max_depth=12, n_jobs=-1, random_state=42),
+}
+print(f"Treino: {len(indices_treino):,} jogos | Teste: {len(indices_teste):,} jogos | Features no cenário A: {len(X.columns)}")"""))
+cells.append(md("""### 16.2 Treinamento, previsão e avaliação
+
+Cada modelo é treinado com 80% dos jogos e avaliado nos 20% que ele nunca viu. Métricas, todas em unidades de log10(`Peak CCU`): **MAE** (erro absoluto médio), **RMSE** (penaliza erros grandes) e **R²** (fração da variância explicada; 0 equivale a prever sempre a média)."""))
+cells.append(code("""linhas, previsoes = [], {}
+for nome_cenario, colunas in cenarios.items():
+    for nome_modelo, criar in modelos.items():
+        modelo = criar().fit(X.loc[indices_treino, colunas], alvo.loc[indices_treino])
+        previsto = modelo.predict(X.loc[indices_teste, colunas])
+        real = alvo.loc[indices_teste]
+        previsoes[(nome_cenario, nome_modelo)] = previsto
+        linhas.append({
+            "cenário": nome_cenario, "modelo": nome_modelo,
+            "MAE": mean_absolute_error(real, previsto),
+            "RMSE": mean_squared_error(real, previsto) ** 0.5,
+            "R²": r2_score(real, previsto),
+        })
+resultados = pd.DataFrame(linhas).set_index(["cenário", "modelo"])
+display(resultados.round(3))
+melhor = resultados.loc["A) todas as features", "random forest"]
+print(f"Cenário A, random forest: erro médio de {melhor['MAE']:.2f} em log10, ou seja, fator de {10 ** melhor['MAE']:.1f}x no Peak CCU.")"""))
+cells.append(code("""# Previsto x real no teste (cenário B, random forest) e importância das features
+colunas_b = cenarios["B) sem owners_avg"]
+floresta = modelos["random forest"]().fit(X.loc[indices_treino, colunas_b], alvo.loc[indices_treino])
+previsto_b = floresta.predict(X.loc[indices_teste, colunas_b])
+
+fig, eixos = plt.subplots(1, 2, figsize=(12, 4.5))
+eixos[0].scatter(alvo.loc[indices_teste], previsto_b, s=6, alpha=0.3)
+limites = [alvo.min(), alvo.max()]
+eixos[0].plot(limites, limites, color="red", linestyle="--", label="previsão perfeita")
+eixos[0].set(title="Cenário B (random forest): previsto x real no teste", xlabel="log10(Peak CCU) real", ylabel="log10(Peak CCU) previsto")
+eixos[0].legend()
+importancia = pd.Series(floresta.feature_importances_, index=colunas_b).sort_values().tail(8)
+eixos[1].barh(importancia.index, importancia.values)
+eixos[1].set(title="Importância das features (cenário B)", xlabel="Importância (redução de impureza)")
+plt.tight_layout()
+plt.show()
+print(importancia.sort_values(ascending=False).round(3).to_string())"""))
+cells.append(ans("""- **Desempenho:** o baseline (prever sempre a média) erra 0,68 em log10 (R² 0). O **random forest** do cenário A chega a MAE 0,35 e R² 0,71: erra por um fator de cerca de 2,2x no `Peak CCU`, contra 4,8x do baseline. A **regressão linear** fica atrás (R² 0,56), porque a relação com a popularidade é não linear e há interações (ano, preço, gêneros).
+- **Com e sem `owners_avg`:** para a floresta, tirar `owners_avg` quase não muda nada (R² 0,713 para 0,711), porque `log_avaliacoes` (número de reviews, outra medida de popularidade acumulada) carrega a mesma informação e responde por 72% da importância. Já na regressão linear o efeito aparece (R² 0,56 para 0,50). Ou seja, a alta capacidade do modelo vem de **popularidade acumulada**, que é muito próxima do alvo: usar posse e reviews para prever pico de jogadores é um vazamento parcial de informação, não uma previsão "de lançamento".
+- **Só características intrínsecas (cenário C):** sem nenhuma medida de popularidade, o melhor modelo explica só 23% da variância (R² 0,23, MAE 0,57). Esse é o número honesto para a pergunta "o que o jogo em si, antes de lançar, diz sobre sua audiência": quase nada. A diferença de 0,71 para 0,23 mede quanto do resultado é popularidade.
+- **Limitações:** um único split 80/20 (sem validação cruzada), hiperparâmetros fixos, apenas jogos com telemetria (viés da seção 15) e Metacritic imputado pela mediana do treino. Os resultados valem para esse universo, não para o catálogo inteiro."""))
+cells.append(md("""## 17. Conclusões
+
+Resuma os resultados estatísticos, o desempenho do modelo, as limitações e relacione tudo à pergunta de pesquisa do projeto."""))
+cells.append(ans("""- **Resultados estatísticos:** a audiência na Steam é extremamente concentrada. Entre os 19.680 jogos com telemetria, o `Peak CCU` mediano é 3 e o médio 340; poucos títulos concentram quase toda a audiência (seção 13). As distribuições pedem escala log e medidas robustas (mediana, Spearman). O gênero separa pouco o jogo típico, e preço e nota têm relação fraca com o pico; a base de donos estimada é a variável mais associada (Spearman 0,54), sem ser suficiente para explicar o pico por si só (seção 14).
+- **Desempenho do modelo:** random forest com R² 0,71 e erro típico de 2,2x no `Peak CCU` quando há medidas de popularidade; R² 0,23 quando só restam características intrínsecas do jogo. O modelo é útil para **estimar** a ordem de grandeza de jogos já conhecidos, não para prever o sucesso de um lançamento (seção 16).
+- **Limitações:** só 15,6% do catálogo tem telemetria e a nota Metacritic cobre 15,3% desse universo (viés de sobrevivência e de visibilidade); `owners_avg` é uma estimativa por faixas; um único split e hiperparâmetros fixos; os dados são uma fotografia, não uma série temporal (o fluxo simulado do RA2 serve para demonstrar o processamento, não para estudar a dinâmica real).
+- **Volta à pergunta de pesquisa:** quais características (preço, gênero, nota) se associam a maior pico de jogadores? **P1:** preço tem associação fraca (Spearman 0,20). **P2:** o gênero separa pouco a mediana; muda a chance de haver um campeão de audiência. **P3:** Metacritic tem associação moderada (0,39), mas só para os jogos com crítica. Juntas, as características intrínsecas explicam cerca de 23% da variância do `log10(Peak CCU)`; o restante vem de popularidade acumulada (posse, reviews) ou de fatores que a loja não descreve. **P4:** o fluxo simulado do RA2 mostra o processamento em tempo real, mas o comportamento ao vivo de verdade não foi coletado; fica como limitação.
+- **Próximos passos:** validação cruzada e busca de hiperparâmetros, features de texto (descrição, tags), e dados temporais reais de `Peak CCU` para estudar lançamento e retenção."""))
+
+
 nb = new_notebook(cells=cells, metadata={
     "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
     "language_info": {"name": "python"},

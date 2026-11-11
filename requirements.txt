@@ -123,3 +123,5 @@ widgetsnbextension==4.0.16
 kaggle
 pyspark==4.0.3
 py4j==0.10.9.9
+scikit-learn==1.9.1
+scipy==1.18.1
