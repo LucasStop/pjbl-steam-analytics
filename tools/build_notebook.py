@@ -346,7 +346,10 @@ desc["q1"] = com_ccu[variaveis].quantile(0.25)
 desc["q3"] = com_ccu[variaveis].quantile(0.75)
 desc["p95"] = com_ccu[variaveis].quantile(0.95)
 desc["assimetria"] = com_ccu[variaveis].skew()
-display(desc.round(2))
+# Duas tabelas, para caber na página do PDF: (1) tendência central e extremos; (2) dispersão e forma
+with pd.option_context("display.float_format", "{:,.2f}".format):
+    display(desc[["count", "mean", "median", "std", "min", "max"]])
+    display(desc[["amplitude", "q1", "q3", "p95", "assimetria"]])
 
 # Média vs mediana e concentração: quanto a cauda longa distorce a "média típica"
 razao = (desc["mean"] / desc["median"]).rename("média / mediana")
@@ -403,11 +406,11 @@ plt.tight_layout()
 plt.show()
 rho, p = spearmanr(com_ccu["owners_avg"], com_ccu["Peak CCU"])
 print(f"Spearman owners_avg x Peak CCU: {rho:.2f} (p = {p:.1e})")"""))
-cells.append(ans("""Há uma relação positiva clara: quanto maior a base de donos estimada, maior o pico de jogadores simultâneos (Spearman 0,54, p ≈ 0). A nuvem é larga: entre os jogos com 1,5 milhão de donos estimados, por exemplo, o `Peak CCU` vai de 4 (percentil 5) a 2.549 (percentil 95), quase três ordens de grandeza, então posse é condição necessária, mas longe de suficiente. A concentração mais densa (cor mais clara) fica na faixa de 10 mil donos com 1 a 2 jogadores simultâneos (7.779 jogos, 40% do universo). **Leitura:** popularidade acumulada e audiência simultânea andam juntas, mas não são a mesma coisa; isso reaparece no modelo da seção 16 (risco de usar `owners_avg` como feature)."""))
+cells.append(ans("""Há uma relação positiva clara: quanto maior a base de donos estimada, maior o pico de jogadores simultâneos (Spearman 0,54, p ≈ 0). A nuvem é larga: entre os jogos com 1,5 milhão de donos estimados, por exemplo, o `Peak CCU` vai de 4 (percentil 5) a 2.549 (percentil 95), quase três ordens de grandeza, então posse é condição necessária, mas longe de suficiente. A concentração mais densa (cor mais clara) fica na faixa de 10 mil donos, que reúne 7.779 jogos (40% do universo); 5.179 deles (26% do universo) têm só 1 ou 2 jogadores simultâneos. **Leitura:** popularidade acumulada e audiência simultânea andam juntas, mas não são a mesma coisa; isso reaparece no modelo da seção 16 (risco de usar `owners_avg` como feature)."""))
 
 cells.append(md("### 14.4 Correlação entre as variáveis (mapa de calor)"))
 cells.append(code("""corr = com_ccu[variaveis].corr(method="spearman")
-fig, eixo = plt.subplots(figsize=(5.5, 4.5))
+fig, eixo = plt.subplots(figsize=(6.5, 5))
 imagem = eixo.imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
 eixo.set_xticks(range(len(variaveis)), variaveis, rotation=30, ha="right")
 eixo.set_yticks(range(len(variaveis)), variaveis)
@@ -415,7 +418,7 @@ for i in range(len(variaveis)):
     for j in range(len(variaveis)):
         eixo.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center")
 fig.colorbar(imagem, label="Correlação de Spearman")
-eixo.set_title("Correlação de Spearman entre variáveis numéricas")
+fig.suptitle("Correlação de Spearman entre variáveis numéricas")  # título na figura: no eixo ele invadia a barra de cores
 plt.tight_layout()
 plt.show()"""))
 cells.append(ans("""`Peak CCU` correlaciona mais com `owners_avg` (0,54), depois com `Metacritic score` (0,39) e, bem menos, com `Price` (0,20). O preço quase não se relaciona com a base de donos (-0,08): jogos caros não vendem mais nem menos por isso, mas têm pico um pouco maior. Metacritic se correlaciona fracamente com preço (0,25) e com donos (0,26). Como a nota Metacritic só existe para 15,3% do universo, essa correlação vale para os jogos com crítica especializada (3.004), tipicamente os maiores (viés discutido na seção 15). **Leitura:** nenhuma variável isolada explica o pico; o conjunto delas é o ponto de partida do modelo de ML."""))
@@ -450,15 +453,14 @@ cells.append(md("""### 16.1 Problema preditivo
 **Regressão:** estimar o pico de jogadores simultâneos de um jogo (`Peak CCU`) a partir de características da loja. **Alvo:** `log10(Peak CCU)` (a escala log é necessária porque a variável é extremamente assimétrica, seção 13; os erros ficam em ordens de grandeza). **Universo:** os 19.680 jogos com telemetria. **Features:** preço, nota Metacritic (mediana do treino quando ausente, mais um indicador de presença), proporção de reviews positivas, log do número de reviews, ano de lançamento, oito gêneros principais (indicadores 0/1) e, no cenário completo, log de `owners_avg`.
 
 A pergunta central é **quanto cada grupo de variáveis ajuda**. Como `owners_avg` e o número de reviews medem popularidade acumulada, quase "contêm" a resposta, então comparamos três cenários: (A) todas as features, (B) sem `owners_avg`, (C) só características intrínsecas do jogo (preço, nota, ano, gênero), sem nenhuma medida de popularidade."""))
-cells.append(code("""import pandas as pd
-from sklearn.dummy import DummyRegressor
+cells.append(code("""from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 alvo = np.log10(com_ccu["Peak CCU"].astype("float64"))
-generos_principais = list(com_ccu["Genres"].str.split(",").explode().str.strip().drop(labels=[], errors="ignore")
+generos_principais = list(com_ccu["Genres"].str.split(",").explode().str.strip()
                           .value_counts().drop("Not specified", errors="ignore").head(8).index)
 
 # Separação treino/teste ANTES de qualquer imputação: a mediana de Metacritic vem só do treino
@@ -528,7 +530,7 @@ plt.show()
 print(importancia.sort_values(ascending=False).round(3).to_string())"""))
 cells.append(ans("""- **Desempenho:** o baseline (prever sempre a média) erra 0,68 em log10 (R² 0). O **random forest** do cenário A chega a MAE 0,35 e R² 0,71: erra por um fator de cerca de 2,2x no `Peak CCU`, contra 4,8x do baseline. A **regressão linear** fica atrás (R² 0,56), porque a relação com a popularidade é não linear e há interações (ano, preço, gêneros).
 - **Com e sem `owners_avg`:** para a floresta, tirar `owners_avg` quase não muda nada (R² 0,713 para 0,711), porque `log_avaliacoes` (número de reviews, outra medida de popularidade acumulada) carrega a mesma informação e responde por 72% da importância. Já na regressão linear o efeito aparece (R² 0,56 para 0,50). Ou seja, a alta capacidade do modelo vem de **popularidade acumulada**, que é muito próxima do alvo: usar posse e reviews para prever pico de jogadores é um vazamento parcial de informação, não uma previsão "de lançamento".
-- **Só características intrínsecas (cenário C):** sem nenhuma medida de popularidade, o melhor modelo explica só 23% da variância (R² 0,23, MAE 0,57). Esse é o número honesto para a pergunta "o que o jogo em si, antes de lançar, diz sobre sua audiência": quase nada. A diferença de 0,71 para 0,23 mede quanto do resultado é popularidade.
+- **Só características intrínsecas (cenário C):** sem nenhuma medida de popularidade, o melhor modelo explica só 23% da variância (R² 0,23, MAE 0,57). Esse é o número honesto para a pergunta "o que as características de cadastro do jogo, sem nenhuma medida de popularidade, dizem sobre sua audiência": pouco. E nem o cenário C é uma previsão de pré-lançamento, porque a nota Metacritic só existe depois que o jogo sai. A diferença de 0,71 para 0,23 mede quanto do resultado é popularidade.
 - **Limitações:** um único split 80/20 (sem validação cruzada), hiperparâmetros fixos, apenas jogos com telemetria (viés da seção 15) e Metacritic imputado pela mediana do treino. Os resultados valem para esse universo, não para o catálogo inteiro."""))
 cells.append(md("""## 17. Conclusões
 
