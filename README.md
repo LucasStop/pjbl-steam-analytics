@@ -55,8 +55,8 @@ Ambiente: venv dedicado do projeto em `.venv/`, dependências travadas em `requi
 ```
 PJBL/
 ├── Dataset/          # CSVs originais + games_clean.csv (fora do git)
-├── Notebooks/        # 01_inspect_prepare (RA1) + projeto_data_analytics (RA1 + RA2, template da disciplina)
-├── docs/             # RA1_Data_Analytics.docx, projeto_data_analytics_RA1_RA2_RA3.pdf (entrega RA2), roteiro_demo_RA2.md, template
+├── Notebooks/        # 01_inspect_prepare (RA1) + projeto_data_analytics (RA1 + RA2 + RA3, template da disciplina)
+├── docs/             # RA1_Data_Analytics.docx, projeto_data_analytics_RA1_RA2_RA3.pdf (PDF do notebook, entrega RA1/RA2/RA3), roteiro_demo_RA2.md, roteiro_demo_RA3.md, template
 ├── .venv/            # ambiente Python do projeto
 └── requirements.txt  # dependências travadas
 ```
