@@ -19,7 +19,7 @@ cells.append(md("""# Identificação do projeto
 **Turma:** Data Analytics (PjBL) • PUCPR • Turma U • 2026/2  
 **Descrição breve do problema ou contexto:** A Steam publica, para cada jogo, preço, gêneros, tags, reviews e uma estimativa de pico de jogadores simultâneos (Peak CCU). O projeto investiga quais características de um jogo acompanham maior audiência e como o catálogo histórico se compara ao comportamento dos jogos mais jogados em tempo real.
 
-Notebook único do projeto, preenchido ao longo de RA1 e RA2. O detalhamento completo do RA1 está em `Notebooks/01_inspect_prepare.ipynb` e em `docs/RA1_Data_Analytics.docx`; aqui o fluxo foi condensado e é reexecutável do início ao fim."""))
+Notebook único do projeto, preenchido ao longo de RA1, RA2 e RA3. O detalhamento completo do RA1 está em `Notebooks/01_inspect_prepare.ipynb` e em `docs/RA1_Data_Analytics.docx`; aqui o fluxo foi condensado e é reexecutável do início ao fim."""))
 
 # ---------------- RA1
 cells.append(md(T[1]))
