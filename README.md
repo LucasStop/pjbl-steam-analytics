@@ -18,7 +18,7 @@ Dados necessários: catálogo com preço, gênero/tags, reviews e pico de jogado
 
 **Classificação dos dados:** majoritariamente **estruturado** — os 4 datasets do Kaggle são tabulares (CSV) e as duas APIs (Steam Web API, SteamSpy) retornam JSON estruturado por campo. Não há dado não-estruturado no projeto (não usamos texto livre de review nem imagem/vídeo).
 
-**Tipo de analytics:** **descritivo** (perfil do catálogo — distribuição de preço, gênero, nota) e **diagnóstico** (o que diferencia jogos com pico de jogadores alto dos demais). Não há componente preditivo nem prescritivo nesta fase do projeto.
+**Tipo de analytics:** **descritivo** (perfil do catálogo — distribuição de preço, gênero, nota) e **diagnóstico** (o que diferencia jogos com pico de jogadores alto dos demais), e, a partir do RA3, **preditivo** (regressão supervisionada de `log10(Peak CCU)`, seção 16 do notebook). Não há componente prescritivo.
 
 ## Fontes de dados
 
